@@ -1,0 +1,78 @@
+
+/* ── Page layout ─────────────────────────────────────────────────────────── */
+.report-gemini-description {
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+/* ── Controls card ────────────────────────────────────────────────────────── */
+.report-gemini-controls {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+}
+
+/* ── Error alert ──────────────────────────────────────────────────────────── */
+.report-gemini-error {
+    font-size: 0.9rem;
+    border-radius: 0.5rem;
+}
+
+/* ── Results section ──────────────────────────────────────────────────────── */
+.report-gemini-results-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #212529;
+    border-left: 4px solid #0d6efd;
+    padding-left: 0.75rem;
+}
+
+/* ── Table ────────────────────────────────────────────────────────────────── */
+.report-gemini-table {
+    font-size: 0.875rem;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
+}
+
+.report-gemini-table thead th {
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.report-gemini-table tbody td {
+    vertical-align: middle;
+    /* Allow long text like best_seasons to wrap nicely */
+    max-width: 320px;
+    word-break: break-word;
+}
+
+/* Numeric columns */
+.report-gemini-table .font-monospace {
+    font-feature-settings: "tnum";
+}
+
+/* ── Meta info ────────────────────────────────────────────────────────────── */
+.report-gemini-meta {
+    font-size: 0.8rem;
+}
+
+/* ── Generate button spinner ──────────────────────────────────────────────── */
+#gemini-generate-btn .spinner-border {
+    width: 0.9rem;
+    height: 0.9rem;
+    border-width: 0.15em;
+}
+
+/* ── Responsive: make table scrollable on small screens ───────────────────── */
+@media (max-width: 767.98px) {
+    .report-gemini-table {
+        font-size: 0.8rem;
+    }
+
+    .report-gemini-table tbody td {
+        max-width: 200px;
+    }
+}
