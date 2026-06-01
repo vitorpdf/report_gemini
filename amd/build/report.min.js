@@ -3,11 +3,8 @@ define(['jquery'], function($) {
 
     'use strict';
 
-    /**
-     * Escape HTML to prevent XSS.
-     * @param {*} val
-     * @returns {string}
-     */
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
     function esc(val) {
         if (val === null || val === undefined) { return '—'; }
         return String(val)
@@ -17,56 +14,39 @@ define(['jquery'], function($) {
             .replace(/"/g, '&quot;');
     }
 
-    /**
-     * Format integer with pt-BR thousands separator.
-     * @param {*} val
-     * @returns {string}
-     */
     function fmtNumber(val) {
         var n = parseFloat(val);
         if (isNaN(n)) { return esc(val); }
         return n.toLocaleString('pt-BR');
     }
 
-    /**
-     * Build the complete <table> inner HTML.
-     * @param {Array}  columns      [[key, label], ...]
-     * @param {Array}  numericCols  Array of keys that are numeric.
-     * @param {Array}  items        Data rows.
-     * @returns {string}
-     */
     function buildTable(columns, numericCols, items) {
         var numSet = {};
         (numericCols || []).forEach(function(k) { numSet[k] = true; });
 
-        // Also auto-detect numeric columns from first row.
+        // Auto-detect numeric from first row.
         if (items.length > 0) {
             columns.forEach(function(col) {
-                if (typeof items[0][col[0]] === 'number') {
-                    numSet[col[0]] = true;
-                }
+                if (typeof items[0][col[0]] === 'number') { numSet[col[0]] = true; }
             });
         }
 
-        // ── <thead> ────────────────────────────────────────────────────────────
         var thead = '<thead class="table-dark"><tr>';
         columns.forEach(function(col) {
-            var align = numSet[col[0]] ? ' class="text-end"' : '';
-            thead += '<th scope="col"' + align + '>' + esc(col[1]) + '</th>';
+            var cls = numSet[col[0]] ? ' class="text-end"' : '';
+            thead += '<th scope="col"' + cls + '>' + esc(col[1]) + '</th>';
         });
         thead += '</tr></thead>';
 
-        // ── <tbody> ────────────────────────────────────────────────────────────
         var tbody = '<tbody>';
         items.forEach(function(row) {
             tbody += '<tr>';
             columns.forEach(function(col) {
-                var k   = col[0];
-                var val = row[k];
+                var k = col[0];
                 if (numSet[k]) {
-                    tbody += '<td class="text-end font-monospace">' + fmtNumber(val) + '</td>';
+                    tbody += '<td class="text-end font-monospace">' + fmtNumber(row[k]) + '</td>';
                 } else {
-                    tbody += '<td>' + esc(val) + '</td>';
+                    tbody += '<td>' + esc(row[k]) + '</td>';
                 }
             });
             tbody += '</tr>';
@@ -76,34 +56,36 @@ define(['jquery'], function($) {
         return thead + tbody;
     }
 
-    /**
-     * Initialise the report page.
-     * @param {Object} params
-     */
+    // ── Init ──────────────────────────────────────────────────────────────────
+
     function init(params) {
-        var $select   = $('#gemini-preset-select');
-        var $genBtn   = $('#gemini-generate-btn');
-        var $clearBtn = $('#gemini-clear-btn');
         var $error    = $('#gemini-error');
         var $results  = $('#gemini-results');
         var $title    = $('#gemini-results-title');
         var $table    = $('#gemini-table');
         var $meta     = $('#gemini-meta');
-        var $spinner  = $genBtn.find('.spinner-border');
-        var $label    = $genBtn.find('.btn-label');
+        var $clearBtn = $('#gemini-clear-btn');
+
+        // Track which button is currently loading.
+        var $activeBtn = null;
 
         function showError(msg) {
             $error.removeClass('d-none').html('<strong>⚠ Erro:</strong> ' + esc(msg));
             $results.addClass('d-none');
+            // Scroll to error.
+            $('html, body').animate({ scrollTop: $error.offset().top - 80 }, 300);
         }
 
         function hideError() {
             $error.addClass('d-none').html('');
         }
 
-        function setLoading(on) {
-            $genBtn.prop('disabled', on);
-            $select.prop('disabled', on);
+        function setLoading($btn, on) {
+            // All preset buttons.
+            $('.gemini-preset-btn').prop('disabled', on);
+
+            var $spinner = $btn.find('.spinner-border');
+            var $label   = $btn.find('.btn-label');
             if (on) {
                 $spinner.removeClass('d-none');
                 $label.text(params.strings.generating);
@@ -113,14 +95,25 @@ define(['jquery'], function($) {
             }
         }
 
-        function generateReport() {
-            var preset = $select.val();
+        function clearReport() {
+            $results.addClass('d-none');
+            $table.html('');
+            $title.text('');
+            $meta.html('');
+            hideError();
+        }
+
+        // ── Bind each preset button ───────────────────────────────────────────
+        $(document).on('click', '.gemini-preset-btn', function() {
+            var $btn   = $(this);
+            var preset = $btn.data('preset');
+
             if (!preset) { return; }
 
             hideError();
-            $results.addClass('d-none');
-            $clearBtn.addClass('d-none');
-            setLoading(true);
+            clearReport();
+            setLoading($btn, true);
+            $activeBtn = $btn;
 
             $.ajax({
                 url:         params.ajax_url,
@@ -135,6 +128,10 @@ define(['jquery'], function($) {
             .done(function(data) {
                 if (data.error) {
                     showError(data.error);
+                    // Show debug info in console to help diagnose.
+                    if (data.debug) {
+                        console.warn('[Gemini Report] Raw AI response (first 800 chars):', data.debug);
+                    }
                     return;
                 }
 
@@ -143,49 +140,36 @@ define(['jquery'], function($) {
                     return;
                 }
 
-                // Render table.
+                // Render.
                 $title.text(data.title);
                 $table.html(buildTable(data.columns, data.numeric_cols, data.items));
 
-                // Meta info.
                 var now = new Date();
                 var ts  = now.toLocaleDateString('pt-BR') + ' às ' + now.toLocaleTimeString('pt-BR');
                 $meta.html(
-                    '📊 <strong>' + data.count + '</strong> registro(s) &nbsp;·&nbsp; 🕒 ' + esc(ts)
+                    '📊 <strong>' + data.count + '</strong> registro(s) &nbsp;·&nbsp; 🕒 Gerado em ' + esc(ts)
                 );
 
                 $results.removeClass('d-none');
-                $clearBtn.removeClass('d-none');
 
+                // Smooth scroll to results.
                 $('html, body').animate({ scrollTop: $results.offset().top - 80 }, 400);
             })
             .fail(function(xhr) {
                 var msg = 'Erro inesperado ao contactar o servidor.';
                 try {
                     var r = JSON.parse(xhr.responseText);
-                    if (r.error) { msg = r.error; }
+                    if (r && r.error) { msg = r.error; }
                 } catch (e) { /* ignore */ }
                 showError(msg);
             })
             .always(function() {
-                setLoading(false);
+                setLoading($btn, false);
+                $activeBtn = null;
             });
-        }
-
-        function clearReport() {
-            $results.addClass('d-none');
-            $clearBtn.addClass('d-none');
-            $table.html('');
-            $title.text('');
-            $meta.html('');
-            hideError();
-        }
-
-        $genBtn.on('click', generateReport);
-        $clearBtn.on('click', clearReport);
-        $select.on('keydown', function(e) {
-            if (e.key === 'Enter') { e.preventDefault(); generateReport(); }
         });
+
+        $clearBtn.on('click', clearReport);
     }
 
     return { init: init };
