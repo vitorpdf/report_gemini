@@ -1,6 +1,5 @@
 <?php
 
-
 // Plugin name (shown in "Reports" menu).
 $string['pluginname']        = 'Gemini Data Reports';
 $string['gemini_data:view']  = 'View Gemini Data Reports';
@@ -11,9 +10,12 @@ $string['pageheading']       = 'AI-Powered Data Reports';
 $string['pagedescription']   = 'Choose a preset query below and click <strong>Generate Report</strong> to fetch structured data from Google Gemini AI.';
 
 // Preset labels.
-$string['preset_countries']  = 'Countries and their populations';
-$string['preset_states']     = 'Brazilian states and founding dates';
-$string['preset_peaks']      = '10 highest peaks in Brazil';
+$string['preset_countries']      = 'Countries and their populations';
+$string['preset_countries_desc'] = 'Lists all UN-recognized countries with estimated population and continent.';
+$string['preset_states']         = 'Brazilian states and founding dates';
+$string['preset_states_desc']    = 'Lists all 26 Brazilian states and the Federal District with abbreviation, capital, region and official creation date.';
+$string['preset_peaks']          = '10 highest peaks in Brazil';
+$string['preset_peaks_desc']     = 'Ranks the 10 highest peaks in Brazil with altitude, location and best seasons to climb each one.';
 
 // Buttons.
 $string['generate']          = 'Generate Report';
