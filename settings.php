@@ -1,6 +1,13 @@
 <?php
 if ($ADMIN->fulltree) {
-
+    // ── acesso ao menu Administração → Relatórios ─────────────────
+    // admin_externalpage é o que faz o item aparecer no menu lateral do Moodle.
+    $ADMIN->add('reports', new admin_externalpage(
+        'report_gemini_data',
+        get_string('pluginname', 'report_gemini_data'),
+        new moodle_url('/report/gemini_data/index.php'),
+        'report/gemini_data:view'
+    ));
     // cabeçalho da configuração da API.
     $settings->add(new admin_setting_heading(
         'block_gemini_chat/settingsheading',
