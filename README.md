@@ -1,4 +1,4 @@
-# report_gemini_data — Plugin de Relatório Moodle com IA Gemini
+# Plugin de Relatório Moodle com IA Gemini
 
 Plugin de relatório para Moodle que consulta a API do **Google Gemini** com prompts pré-definidos e exibe os resultados em tabelas estruturadas.
 
