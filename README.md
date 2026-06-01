@@ -6,7 +6,7 @@ Plugin de relatório para Moodle que consulta a API do **Google Gemini** com pro
 
 | Propt | Dados retornados |
 |---|---|
-| **Continente e suas populações** | Nome, continente e população de todos os países do mundo |
+| **Continente e suas populações** | Nome, continente e população de todos os países da america latina |
 | **Estados do Brasil e data de fundação** | Nome, sigla, capital, região e data de fundação dos 27 UFs |
 | **10 picos mais altos do Brasil** | Ranking, nome, altitude, estado, parque e melhores épocas para subir |
 
