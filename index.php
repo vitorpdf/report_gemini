@@ -1,4 +1,18 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+/**
+ * Gemini Data Reports – main page.
+ *
+ * @package   report_gemini_data
+ * @copyright 2025 Your Name
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 
 require_once(__DIR__ . '/../../config.php');
 
@@ -13,107 +27,123 @@ $PAGE->set_title(get_string('pagetitle', 'report_gemini_data'));
 $PAGE->set_heading(get_string('pageheading', 'report_gemini_data'));
 $PAGE->set_pagelayout('report');
 
-// Enqueue AMD module.
 $PAGE->requires->js_call_amd('report_gemini_data/report', 'init', [[
     'sesskey'  => sesskey(),
     'ajax_url' => (new moodle_url('/report/gemini_data/ajax.php'))->out(false),
     'strings'  => [
-        'generating'      => get_string('generating',      'report_gemini_data'),
-        'generate'        => get_string('generate',        'report_gemini_data'),
-        'errornoresults'  => get_string('errornoresults',  'report_gemini_data'),
-        'errorinvalidjson'=> get_string('errorinvalidjson','report_gemini_data'),
+        'generating'       => get_string('generating',       'report_gemini_data'),
+        'generate'         => get_string('generate',         'report_gemini_data'),
+        'errornoresults'   => get_string('errornoresults',   'report_gemini_data'),
+        'errorinvalidjson' => get_string('errorinvalidjson', 'report_gemini_data'),
     ],
 ]]);
 
-// Preset definitions – label (string key) => preset id used by JS / ajax.
+// Presets: id => [label, icon, description, button_class].
 $presets = [
-    'countries' => get_string('preset_countries', 'report_gemini_data'),
-    'states'    => get_string('preset_states',    'report_gemini_data'),
-    'peaks'     => get_string('preset_peaks',     'report_gemini_data'),
+    'countries' => [
+        'label'       => get_string('preset_countries', 'report_gemini_data'),
+        'icon'        => '🌍',
+        'description' => get_string('preset_countries_desc', 'report_gemini_data'),
+        'btn_class'   => 'btn-primary',
+    ],
+    'states' => [
+        'label'       => get_string('preset_states', 'report_gemini_data'),
+        'icon'        => '🗺️',
+        'description' => get_string('preset_states_desc', 'report_gemini_data'),
+        'btn_class'   => 'btn-success',
+    ],
+    'peaks' => [
+        'label'       => get_string('preset_peaks', 'report_gemini_data'),
+        'icon'        => '⛰️',
+        'description' => get_string('preset_peaks_desc', 'report_gemini_data'),
+        'btn_class'   => 'btn-warning',
+    ],
 ];
 
 echo $OUTPUT->header();
 
-// ── Description ──────────────────────────────────────────────────────────────
+// ── Page description ──────────────────────────────────────────────────────────
 echo html_writer::div(
     get_string('pagedescription', 'report_gemini_data'),
-    'report-gemini-description alert alert-info'
+    'alert alert-info mb-4'
 );
 
-// ── Preset selector + button ─────────────────────────────────────────────────
-echo html_writer::start_div('report-gemini-controls card p-3 mb-4');
+// ── Preset cards with individual buttons ──────────────────────────────────────
+echo html_writer::start_div('row g-3 mb-4', ['id' => 'gemini-preset-cards']);
 
-echo html_writer::start_div('form-group mb-3');
-echo html_writer::label(
-    get_string('generate', 'report_gemini_data'),
-    'gemini-preset-select',
-    true,
-    ['class' => 'form-label fw-semibold d-block mb-2']
-);
+foreach ($presets as $id => $preset) {
+    echo html_writer::start_div('col-12 col-md-4');
+    echo html_writer::start_div('card h-100 shadow-sm');
+    echo html_writer::start_div('card-body d-flex flex-column');
 
-$select_options = '';
-foreach ($presets as $id => $label) {
-    $select_options .= html_writer::tag('option', $label, ['value' => $id]);
+    // Card title.
+    echo html_writer::tag('h5',
+        $preset['icon'] . ' ' . $preset['label'],
+        ['class' => 'card-title']
+    );
+
+    // Card description.
+    echo html_writer::tag('p',
+        $preset['description'],
+        ['class' => 'card-text text-muted flex-grow-1']
+    );
+
+    // Generate button (individual per preset).
+    echo html_writer::tag('button',
+        html_writer::span(get_string('generate', 'report_gemini_data'), 'btn-label') .
+        html_writer::span('', 'spinner-border spinner-border-sm ms-2 d-none',
+            ['role' => 'status', 'aria-hidden' => 'true']),
+        [
+            'type'         => 'button',
+            'class'        => 'btn ' . $preset['btn_class'] . ' mt-auto gemini-preset-btn',
+            'data-preset'  => $id,
+            'id'           => 'gemini-btn-' . $id,
+        ]
+    );
+
+    echo html_writer::end_div(); // .card-body
+    echo html_writer::end_div(); // .card
+    echo html_writer::end_div(); // .col
 }
-echo html_writer::tag(
-    'select',
-    $select_options,
-    [
-        'id'    => 'gemini-preset-select',
-        'class' => 'form-select form-control',
-        'aria-label' => get_string('generate', 'report_gemini_data'),
-    ]
-);
-echo html_writer::end_div(); // .form-group
 
-// Generate button.
-echo html_writer::tag(
-    'button',
-    html_writer::span(get_string('generate', 'report_gemini_data'), 'btn-label') .
-    html_writer::span('', 'spinner-border spinner-border-sm ms-2 d-none', ['role' => 'status', 'aria-hidden' => 'true']),
-    [
-        'id'    => 'gemini-generate-btn',
-        'type'  => 'button',
-        'class' => 'btn btn-primary me-2',
-    ]
-);
+echo html_writer::end_div(); // #gemini-preset-cards
 
-// Clear button.
-echo html_writer::tag(
-    'button',
+// ── Error container ───────────────────────────────────────────────────────────
+echo html_writer::div('', 'alert alert-danger d-none mb-3',
+    ['id' => 'gemini-error', 'role' => 'alert']);
+
+// ── Results section ───────────────────────────────────────────────────────────
+echo html_writer::start_div('d-none', ['id' => 'gemini-results']);
+
+// Results header bar.
+echo html_writer::start_div('d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2');
+
+echo html_writer::tag('h3', '', [
+    'id'    => 'gemini-results-title',
+    'class' => 'report-gemini-results-title mb-0',
+]);
+
+echo html_writer::tag('button',
     get_string('clearreport', 'report_gemini_data'),
     [
         'id'    => 'gemini-clear-btn',
         'type'  => 'button',
-        'class' => 'btn btn-outline-secondary d-none',
+        'class' => 'btn btn-outline-secondary btn-sm',
     ]
 );
 
-echo html_writer::end_div(); // .report-gemini-controls
+echo html_writer::end_div(); // flex header
 
-// ── Error container ───────────────────────────────────────────────────────────
-echo html_writer::div(
-    '',
-    'report-gemini-error alert alert-danger d-none',
-    ['id' => 'gemini-error', 'role' => 'alert']
-);
-
-// ── Results container ─────────────────────────────────────────────────────────
-echo html_writer::start_div('report-gemini-results d-none', ['id' => 'gemini-results']);
-
-// Title placeholder.
-echo html_writer::tag('h3', '', ['id' => 'gemini-results-title', 'class' => 'report-gemini-results-title mb-3']);
-
-// Table wrapper.
+// Table.
 echo html_writer::start_div('table-responsive');
 echo html_writer::tag('table', '', [
     'id'    => 'gemini-table',
-    'class' => 'table table-striped table-hover table-bordered report-gemini-table',
+    'class' => 'table table-striped table-hover table-bordered report-gemini-table align-middle',
 ]);
 echo html_writer::end_div();
 
-// Meta info (row count, timestamp).
-echo html_writer::div('', 'report-gemini-meta text-muted small mt-2', ['id' => 'gemini-meta']);
+// Meta info.
+echo html_writer::div('', 'text-muted small mt-2', ['id' => 'gemini-meta']);
 
 echo html_writer::end_div(); // #gemini-results
 
