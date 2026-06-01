@@ -1,11 +1,13 @@
-# report_gemini — Plugin de Relatório Moodle com IA Gemini
+# report_gemini_data — Plugin de Relatório Moodle com IA Gemini
 
 Plugin de relatório para Moodle que consulta a API do **Google Gemini** com prompts pré-definidos e exibe os resultados em tabelas estruturadas.
 
 ## Consultas disponíveis
 
-| Preset | Dados retornados |
+| Propt | Dados retornados |
 |---|---|
+| **Continente e suas populações** | Nome, continente e população de todos os países do mundo |
+| **Estados do Brasil e data de fundação** | Nome, sigla, capital, região e data de fundação dos 27 UFs |
 | **10 picos mais altos do Brasil** | Ranking, nome, altitude, estado, parque e melhores épocas para subir |
 
 ---
@@ -28,21 +30,30 @@ Plugin de relatório para Moodle que consulta a API do **Google Gemini** com pro
 2. Acesse **Administração do site → Plugins → Instalar plugins**.
 3. Faça o upload do ZIP e siga o assistente.
 
+### Opção B — Instalação manual
+
+1. Copie a pasta `report_gemini_data` para:
+   ```
+   /caminho/do/moodle/report/gemini_data/
+   ```
+2. Acesse o Moodle como administrador → **Administração do site → Notificações**.
+3. O Moodle detectará o novo plugin e executará a instalação automaticamente.
+
 ---
 
 ## Configuração
 
 1. Acesse **Administração do site → Plugins → Relatórios → Relatórios de Dados Gemini**.
 2. Insira sua **Chave de API do Gemini**.
-3. Escolha o **modelo** (padrão: `gemini-2.5-flash`).
-4. Ajuste **temperatura** e **máximo de tokens** se desejar.
-5. Salve as alterações.
+3. Ajuste **temperatura** e **máximo de tokens** se desejar.
+4. Salve as alterações.
 
 ---
 
 ## Como usar
 
-1. Navegue diretamente para `/report/gemini_data/index.php`.
+1. Acesse **Administração do site → Relatórios → Relatórios de Dados Gemini**  
+   (ou navegue diretamente para `/report/gemini_data/index.php`).
 2. Selecione um dos prompts pré-definidos no menu suspenso.
 3. Clique em **Gerar Relatório**.
 4. Aguarde a consulta à IA — a tabela será exibida automaticamente.
@@ -50,29 +61,23 @@ Plugin de relatório para Moodle que consulta a API do **Google Gemini** com pro
 
 ---
 
-## Como funciona o retorno JSON
+## Estrutura do plugin
 
-O plugin usa o recurso `responseSchema` da API Gemini para forçar que a IA retorne dados em um schema JSON predefinido. Isso garante que a resposta seja sempre estruturada e parseável, evitando texto livre ou markdown inesperado.
-
-Exemplo de schema para o preset de países:
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "items": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "country":    { "type": "string" },
-          "continent":  { "type": "string" },
-          "population": { "type": "integer" }
-        }
-      }
-    }
-  }
-}
+```
+report/gemini_data/
+├── index.php                 # Página principal do relatório
+├── ajax.php                  # Endpoint AJAX → chama a API Gemini
+├── version.php               # Metadados do plugin
+├── settings.php              # Configurações do administrador
+├── styles.css                # Estilos da interface
+├── amd/
+│   ├── src/report.js         # Módulo AMD (fonte)
+│   └── build/report.min.js   # Módulo AMD (build)
+├── db/
+│   └── access.php            # Capabilities
+└── lang/
+    ├── en/report_gemini_data.php    # Strings em inglês
+    └── pt_br/report_gemini_data.php # Strings em português (BR)
 ```
 
 ---

@@ -1,6 +1,8 @@
 <?php
-if ($ADMIN->fulltree) {
-    // ── acesso ao menu Administração → Relatórios ─────────────────
+
+if ($hassiteconfig) {
+
+    // ── 1. Link de acesso no menu Administração → Relatórios ─────────────────
     // admin_externalpage é o que faz o item aparecer no menu lateral do Moodle.
     $ADMIN->add('reports', new admin_externalpage(
         'report_gemini_data',
@@ -8,20 +10,21 @@ if ($ADMIN->fulltree) {
         new moodle_url('/report/gemini_data/index.php'),
         'report/gemini_data:view'
     ));
-    // cabeçalho da configuração da API.
-    $settings->add(new admin_setting_heading(
-        'block_gemini_chat/settingsheading',
-        get_string('settings', 'block_gemini_chat'),
+
+    // ── 2. Página de configurações do plugin ──────────────────────────────────
+    $settings = new admin_settingpage(
+        'report_gemini_data_settings',
+        get_string('settings', 'report_gemini_data')
+    );
+
+    // API Key.
+    $settings->add(new admin_setting_configpasswordunmask(
+        'report_gemini_data/apikey',
+        get_string('apikey', 'report_gemini_data'),
+        get_string('apikey_desc', 'report_gemini_data'),
         ''
     ));
 
-    // chave da API .
-    $settings->add(new admin_setting_configpasswordunmask(
-        'block_gemini_chat/apikey',
-        get_string('apikey', 'block_gemini_chat'),
-        get_string('apikey_desc', 'block_gemini_chat'),
-        ''
-    ));
     // informa o modelo 
     $settings->add(new admin_setting_heading(
         'block_gemini_chat/model_info',
@@ -29,22 +32,23 @@ if ($ADMIN->fulltree) {
         '<strong>gemini-2.5-flash</strong>',
     ));
 
-    // quantidade de tokens.
+    // Temperature.
     $settings->add(new admin_setting_configtext(
-        'block_gemini_chat/maxoutputtokens',
-        get_string('maxoutputtokens', 'block_gemini_chat'),
-        get_string('maxoutputtokens_desc', 'block_gemini_chat'),
-        '1024',
+        'report_gemini_data/temperature',
+        get_string('temperature', 'report_gemini_data'),
+        get_string('temperature_desc', 'report_gemini_data'),
+        '0.1',
+        PARAM_FLOAT
+    ));
+
+    // Max output tokens.
+    $settings->add(new admin_setting_configtext(
+        'report_gemini_data/maxoutputtokens',
+        get_string('maxoutputtokens', 'report_gemini_data'),
+        get_string('maxoutputtokens_desc', 'report_gemini_data'),
+        '8192',
         PARAM_INT
     ));
 
-    // analise de sentimento se e mais preciso ou não.
-    $settings->add(new admin_setting_configtext(
-        'block_gemini_chat/temperature',
-        get_string('temperature', 'block_gemini_chat'),
-        get_string('temperature_desc', 'block_gemini_chat'),
-        '0.7',
-        PARAM_FLOAT
-    ));
     $ADMIN->add('reports', $settings);
 }
