@@ -118,7 +118,7 @@ $p = $presets[$preset];
 // ── Read plugin settings ──────────────────────────────────────────────────────
 $config          = get_config('report_gemini_data');
 $apikey          = $config->apikey          ?? '';
-$model           =  'gemini-2.5-flash';
+$model           = 'gemini-2.5-flash';
 $maxoutputtokens = (int)($config->maxoutputtokens ?? 4096);
 $temperature     = (float)($config->temperature   ?? 0.1);
 
