@@ -1,6 +1,18 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 
+/**
+ * AMD module – Gemini Data Reports.
+ *
+ * @module    report_gemini_data/report
+ * @copyright 2025
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 define(['jquery'], function($) {
-
     'use strict';
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -8,90 +20,83 @@ define(['jquery'], function($) {
     function esc(val) {
         if (val === null || val === undefined) { return '—'; }
         return String(val)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;');
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
     function fmtNumber(val) {
         var n = parseFloat(val);
-        if (isNaN(n)) { return esc(val); }
-        return n.toLocaleString('pt-BR');
+        return isNaN(n) ? esc(val) : n.toLocaleString('pt-BR');
     }
 
     function buildTable(columns, numericCols, items) {
         var numSet = {};
         (numericCols || []).forEach(function(k) { numSet[k] = true; });
-
-        // Auto-detect numeric from first row.
         if (items.length > 0) {
             columns.forEach(function(col) {
                 if (typeof items[0][col[0]] === 'number') { numSet[col[0]] = true; }
             });
         }
 
-        var thead = '<thead class="table-dark"><tr>';
+        var thead = '<thead><tr>';
         columns.forEach(function(col) {
-            var cls = numSet[col[0]] ? ' class="text-end"' : '';
-            thead += '<th scope="col"' + cls + '>' + esc(col[1]) + '</th>';
+            thead += '<th scope="col"' + (numSet[col[0]] ? ' class="text-end"' : '') + '>' + esc(col[1]) + '</th>';
         });
-        thead += '</tr></thead>';
+        thead += '</tr></thead><tbody>';
 
-        var tbody = '<tbody>';
+        var tbody = '';
         items.forEach(function(row) {
             tbody += '<tr>';
             columns.forEach(function(col) {
                 var k = col[0];
-                if (numSet[k]) {
-                    tbody += '<td class="text-end font-monospace">' + fmtNumber(row[k]) + '</td>';
-                } else {
-                    tbody += '<td>' + esc(row[k]) + '</td>';
-                }
+                tbody += numSet[k]
+                    ? '<td class="text-end font-monospace">' + fmtNumber(row[k]) + '</td>'
+                    : '<td>' + esc(row[k]) + '</td>';
             });
             tbody += '</tr>';
         });
-        tbody += '</tbody>';
 
-        return thead + tbody;
+        return thead + tbody + '</tbody>';
     }
 
     // ── Init ──────────────────────────────────────────────────────────────────
-
     function init(params) {
-        var $error    = $('#gemini-error');
-        var $results  = $('#gemini-results');
-        var $title    = $('#gemini-results-title');
-        var $table    = $('#gemini-table');
-        var $meta     = $('#gemini-meta');
-        var $clearBtn = $('#gemini-clear-btn');
-
-        // Track which button is currently loading.
-        var $activeBtn = null;
+        var $error      = $('#gemini-error');
+        var $results    = $('#gemini-results');
+        var $title      = $('#gemini-results-title');
+        var $table      = $('#gemini-table');
+        var $meta       = $('#gemini-meta');
+        var $clearBtn   = $('#gemini-clear-btn');
+        var $cacheBadge = $('#gemini-cache-badge');
+        var $descBar    = $('#gemini-desc-bar');
 
         function showError(msg) {
             $error.removeClass('d-none').html('<strong>⚠ Erro:</strong> ' + esc(msg));
             $results.addClass('d-none');
-            // Scroll to error.
             $('html, body').animate({ scrollTop: $error.offset().top - 80 }, 300);
         }
 
-        function hideError() {
-            $error.addClass('d-none').html('');
-        }
+        function hideError() { $error.addClass('d-none').html(''); }
 
-        function setLoading($btn, on) {
-            // All preset buttons.
-            $('.gemini-preset-btn').prop('disabled', on);
-
-            var $spinner = $btn.find('.spinner-border');
-            var $label   = $btn.find('.btn-label');
+        // Mark the clicked button as active, reset others.
+        function setActiveBtn($btn, on) {
             if (on) {
-                $spinner.removeClass('d-none');
-                $label.text(params.strings.generating);
+                $('.gemini-preset-btn').removeClass('active').prop('disabled', true);
+                $btn.addClass('active');
+                // Show description for this preset.
+                var preset = $btn.data('preset');
+                $descBar.removeClass('d-none');
+                $('.rg-desc-text').addClass('d-none');
+                $('#gemini-desc-' + preset).removeClass('d-none');
+                // Spinner inside button.
+                $btn.find('.spinner-border').removeClass('d-none');
+                $btn.find('.rg-nav-label').text(params.strings.generating);
             } else {
-                $spinner.addClass('d-none');
-                $label.text(params.strings.generate);
+                $btn.find('.spinner-border').addClass('d-none');
+                $btn.find('.rg-nav-label').text(
+                    $btn.data('origLabel') || params.strings.generate
+                );
+                $('.gemini-preset-btn').prop('disabled', false);
             }
         }
 
@@ -100,73 +105,72 @@ define(['jquery'], function($) {
             $table.html('');
             $title.text('');
             $meta.html('');
+            $cacheBadge.addClass('d-none');
+            $descBar.addClass('d-none');
+            $('.rg-desc-text').addClass('d-none');
+            $('.gemini-preset-btn').removeClass('active');
             hideError();
         }
 
-        // ── Bind each preset button ───────────────────────────────────────────
+        // Store original labels before any modification.
+        $('.gemini-preset-btn').each(function() {
+            $(this).data('origLabel', $(this).find('.rg-nav-label').text());
+        });
+
+        // ── Bind preset buttons ───────────────────────────────────────────────
         $(document).on('click', '.gemini-preset-btn', function() {
             var $btn   = $(this);
             var preset = $btn.data('preset');
-
             if (!preset) { return; }
 
             hideError();
             clearReport();
-            setLoading($btn, true);
-            $activeBtn = $btn;
+            setActiveBtn($btn, true);
 
             $.ajax({
                 url:         params.ajax_url,
                 method:      'POST',
                 contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
-                data: {
-                    sesskey: params.sesskey,
-                    preset:  preset,
-                },
-                dataType: 'json',
+                data:        { sesskey: params.sesskey, preset: preset },
+                dataType:    'json',
+                timeout:     120000,
             })
             .done(function(data) {
                 if (data.error) {
                     showError(data.error);
-                    // Show debug info in console to help diagnose.
-                    if (data.debug) {
-                        console.warn('[Gemini Report] Raw AI response (first 800 chars):', data.debug);
-                    }
+                    if (data.debug) { console.warn('[Gemini Report] debug:', data.debug); }
                     return;
                 }
-
-                if (!data.items || data.items.length === 0) {
+                if (!data.items || !data.items.length) {
                     showError(params.strings.errornoresults);
                     return;
                 }
 
-                // Render.
+                // ── Render ────────────────────────────────────────────────────
                 $title.text(data.title);
                 $table.html(buildTable(data.columns, data.numeric_cols, data.items));
 
+                // Cache badge.
+                if (data.from_cache) {
+                    $cacheBadge.removeClass('d-none');
+                } else {
+                    $cacheBadge.addClass('d-none');
+                }
+
                 var now = new Date();
                 var ts  = now.toLocaleDateString('pt-BR') + ' às ' + now.toLocaleTimeString('pt-BR');
-                $meta.html(
-                    '📊 <strong>' + data.count + '</strong> registro(s) &nbsp;·&nbsp; 🕒 Gerado em ' + esc(ts)
-                );
+                $meta.html('📊 <strong>' + data.count + '</strong> registro(s) &nbsp;·&nbsp; 🕒 ' + esc(ts)
+                    + (data.from_cache ? ' &nbsp;·&nbsp; ⚡ do cache' : ' &nbsp;·&nbsp; 🌐 da IA'));
 
                 $results.removeClass('d-none');
-
-                // Smooth scroll to results.
                 $('html, body').animate({ scrollTop: $results.offset().top - 80 }, 400);
             })
             .fail(function(xhr) {
                 var msg = 'Erro inesperado ao contactar o servidor.';
-                try {
-                    var r = JSON.parse(xhr.responseText);
-                    if (r && r.error) { msg = r.error; }
-                } catch (e) { /* ignore */ }
+                try { var r = JSON.parse(xhr.responseText); if (r && r.error) { msg = r.error; } } catch(e) {}
                 showError(msg);
             })
-            .always(function() {
-                setLoading($btn, false);
-                $activeBtn = null;
-            });
+            .always(function() { setActiveBtn($btn, false); });
         });
 
         $clearBtn.on('click', clearReport);

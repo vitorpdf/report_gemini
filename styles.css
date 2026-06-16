@@ -1,78 +1,146 @@
+/* ── Page wrapper ────────────────────────────────────────────────────────── */
+.rg-page {
+    max-width: 1200px;
+}
 
-/* ── Page layout ─────────────────────────────────────────────────────────── */
-.report-gemini-description {
+.rg-intro {
     font-size: 0.95rem;
-    line-height: 1.6;
+    color: #555;
+    margin-bottom: 1.25rem;
 }
 
-/* ── Controls card ────────────────────────────────────────────────────────── */
-.report-gemini-controls {
+/* ── Navigation buttons (Portal-da-Cultura style) ────────────────────────── */
+.rg-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 0;
+}
+
+.rg-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
     background: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 0.5rem;
-}
-
-/* ── Error alert ──────────────────────────────────────────────────────────── */
-.report-gemini-error {
-    font-size: 0.9rem;
-    border-radius: 0.5rem;
-}
-
-/* ── Results section ──────────────────────────────────────────────────────── */
-.report-gemini-results-title {
-    font-size: 1.25rem;
+    color: #333;
     font-weight: 600;
-    color: #212529;
-    border-left: 4px solid #0d6efd;
-    padding-left: 0.75rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+    white-space: nowrap;
 }
 
-/* ── Table ────────────────────────────────────────────────────────────────── */
+.rg-nav-btn:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+    transform: translateY(-1px);
+}
+
+.rg-nav-btn.active {
+    background: #0d6efd;
+    border-color: #0d6efd;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(13,110,253,.35);
+}
+
+.rg-nav-btn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.rg-nav-btn .rg-nav-icon {
+    font-size: 1.1em;
+    line-height: 1;
+}
+
+/* Spinner shown inside active button while loading */
+.rg-nav-btn .spinner-border {
+    width: 0.85rem;
+    height: 0.85rem;
+    border-width: 0.14em;
+}
+
+/* ── Description bar ─────────────────────────────────────────────────────── */
+.rg-desc-bar {
+    margin-top: 0.75rem;
+    padding: 0.6rem 1rem;
+    background: #f0f4ff;
+    border-left: 4px solid #0d6efd;
+    border-radius: 0 6px 6px 0;
+}
+
+.rg-desc-text {
+    margin: 0;
+    font-size: 0.875rem;
+    color: #444;
+}
+
+/* ── Results section ─────────────────────────────────────────────────────── */
+.rg-results {
+    margin-top: 1.5rem;
+}
+
+.rg-results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.rg-results-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #212529;
+    margin: 0;
+}
+
+.rg-results-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* ── Data table ──────────────────────────────────────────────────────────── */
 .report-gemini-table {
     font-size: 0.875rem;
-    border-radius: 0.5rem;
-    overflow: hidden;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
+    box-shadow: 0 1px 4px rgba(0,0,0,.07);
 }
 
 .report-gemini-table thead th {
+    background: #343a40;
+    color: #fff;
     font-weight: 600;
-    letter-spacing: 0.02em;
     white-space: nowrap;
     vertical-align: middle;
 }
 
 .report-gemini-table tbody td {
     vertical-align: middle;
-    /* Allow long text like best_seasons to wrap nicely */
-    max-width: 320px;
+    max-width: 340px;
     word-break: break-word;
 }
 
-/* Numeric columns */
 .report-gemini-table .font-monospace {
     font-feature-settings: "tnum";
 }
 
-/* ── Meta info ────────────────────────────────────────────────────────────── */
-.report-gemini-meta {
-    font-size: 0.8rem;
-}
-
-/* ── Generate button spinner ──────────────────────────────────────────────── */
-#gemini-generate-btn .spinner-border {
-    width: 0.9rem;
-    height: 0.9rem;
-    border-width: 0.15em;
-}
-
-/* ── Responsive: make table scrollable on small screens ───────────────────── */
+/* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 767.98px) {
+    .rg-nav-btn {
+        padding: 8px 12px;
+        font-size: 0.82rem;
+    }
     .report-gemini-table {
         font-size: 0.8rem;
     }
-
     .report-gemini-table tbody td {
-        max-width: 200px;
+        max-width: 180px;
     }
 }
