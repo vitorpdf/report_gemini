@@ -1,9 +1,9 @@
 <?php
 
+
 require_once(__DIR__ . '/../../config.php');
 
 $context = context_system::instance();
-
 require_login();
 require_capability('report/gemini_data:view', $context);
 
@@ -21,116 +21,74 @@ $PAGE->requires->js_call_amd('report_gemini_data/report', 'init', [[
         'generate'         => get_string('generate',         'report_gemini_data'),
         'errornoresults'   => get_string('errornoresults',   'report_gemini_data'),
         'errorinvalidjson' => get_string('errorinvalidjson', 'report_gemini_data'),
+        'cached'           => get_string('cached',           'report_gemini_data'),
     ],
 ]]);
 
-// Presets: id => [label, icon, description, button_class].
+// Preset definitions (UI only — data/prompts live in ajax.php).
 $presets = [
-    'countries' => [
-        'label'       => get_string('preset_countries', 'report_gemini_data'),
-        'icon'        => '🌍',
-        'description' => get_string('preset_countries_desc', 'report_gemini_data'),
-        'btn_class'   => 'btn-primary',
-    ],
-    'states' => [
-        'label'       => get_string('preset_states', 'report_gemini_data'),
-        'icon'        => '🗺️',
-        'description' => get_string('preset_states_desc', 'report_gemini_data'),
-        'btn_class'   => 'btn-success',
-    ],
-    'peaks' => [
-        'label'       => get_string('preset_peaks', 'report_gemini_data'),
-        'icon'        => '⛰️',
-        'description' => get_string('preset_peaks_desc', 'report_gemini_data'),
-        'btn_class'   => 'btn-warning',
-    ],
+    'countries' => ['icon' => '🌍', 'label' => get_string('preset_countries', 'report_gemini_data'), 'desc' => get_string('preset_countries_desc', 'report_gemini_data')],
+    'states'    => ['icon' => '🗺️',  'label' => get_string('preset_states',    'report_gemini_data'), 'desc' => get_string('preset_states_desc',    'report_gemini_data')],
+    'peaks'     => ['icon' => '⛰️',  'label' => get_string('preset_peaks',     'report_gemini_data'), 'desc' => get_string('preset_peaks_desc',     'report_gemini_data')],
 ];
 
 echo $OUTPUT->header();
+?>
+<div class="rg-page">
 
-// ── Page description ──────────────────────────────────────────────────────────
-echo html_writer::div(
-    get_string('pagedescription', 'report_gemini_data'),
-    'alert alert-info mb-4'
-);
+  <!-- ── Description ──────────────────────────────────────────────────────── -->
+  <p class="rg-intro"><?php echo get_string('pagedescription', 'report_gemini_data'); ?></p>
 
-// ── Preset cards with individual buttons ──────────────────────────────────────
-echo html_writer::start_div('row g-3 mb-4', ['id' => 'gemini-preset-cards']);
+  <!-- ── Navigation buttons (Portal da Cultura style) ─────────────────────── -->
+  <div class="rg-nav" role="group" aria-label="Consultas disponíveis">
+    <?php foreach ($presets as $id => $p): ?>
+    <button type="button"
+            class="rg-nav-btn gemini-preset-btn"
+            data-preset="<?php echo $id; ?>"
+            id="gemini-btn-<?php echo $id; ?>">
+      <span class="rg-nav-icon"><?php echo $p['icon']; ?></span>
+      <span class="rg-nav-label"><?php echo s($p['label']); ?></span>
+    </button>
+    <?php endforeach; ?>
+  </div>
 
-foreach ($presets as $id => $preset) {
-    echo html_writer::start_div('col-12 col-md-4');
-    echo html_writer::start_div('card h-100 shadow-sm');
-    echo html_writer::start_div('card-body d-flex flex-column');
+  <!-- ── Active preset description ────────────────────────────────────────── -->
+  <div class="rg-desc-bar d-none" id="gemini-desc-bar">
+    <?php foreach ($presets as $id => $p): ?>
+    <p class="rg-desc-text d-none" id="gemini-desc-<?php echo $id; ?>">
+      <?php echo s($p['desc']); ?>
+    </p>
+    <?php endforeach; ?>
+  </div>
 
-    // Card title.
-    echo html_writer::tag('h5',
-        $preset['icon'] . ' ' . $preset['label'],
-        ['class' => 'card-title']
-    );
+  <!-- ── Error ─────────────────────────────────────────────────────────────── -->
+  <div class="alert alert-danger d-none mt-3" id="gemini-error" role="alert"></div>
 
-    // Card description.
-    echo html_writer::tag('p',
-        $preset['description'],
-        ['class' => 'card-text text-muted flex-grow-1']
-    );
+  <!-- ── Results ───────────────────────────────────────────────────────────── -->
+  <div class="rg-results d-none" id="gemini-results">
 
-    // Generate button (individual per preset).
-    echo html_writer::tag('button',
-        html_writer::span(get_string('generate', 'report_gemini_data'), 'btn-label') .
-        html_writer::span('', 'spinner-border spinner-border-sm ms-2 d-none',
-            ['role' => 'status', 'aria-hidden' => 'true']),
-        [
-            'type'         => 'button',
-            'class'        => 'btn ' . $preset['btn_class'] . ' mt-auto gemini-preset-btn',
-            'data-preset'  => $id,
-            'id'           => 'gemini-btn-' . $id,
-        ]
-    );
+    <div class="rg-results-header">
+      <h3 class="rg-results-title" id="gemini-results-title"></h3>
+      <div class="rg-results-actions">
+        <span class="badge bg-success d-none" id="gemini-cache-badge">
+          ⚡ <?php echo get_string('cached', 'report_gemini_data'); ?>
+        </span>
+        <button type="button" class="btn btn-outline-secondary btn-sm" id="gemini-clear-btn">
+          <?php echo get_string('clearreport', 'report_gemini_data'); ?>
+        </button>
+      </div>
+    </div>
 
-    echo html_writer::end_div(); // .card-body
-    echo html_writer::end_div(); // .card
-    echo html_writer::end_div(); // .col
-}
+    <div class="table-responsive mt-3">
+      <table id="gemini-table"
+             class="table table-striped table-hover table-bordered report-gemini-table align-middle">
+      </table>
+    </div>
 
-echo html_writer::end_div(); // #gemini-preset-cards
+    <p class="text-muted small mt-2" id="gemini-meta"></p>
 
-// ── Error container ───────────────────────────────────────────────────────────
-echo html_writer::div('', 'alert alert-danger d-none mb-3',
-    ['id' => 'gemini-error', 'role' => 'alert']);
+  </div><!-- /#gemini-results -->
 
-// ── Results section ───────────────────────────────────────────────────────────
-echo html_writer::start_div('d-none', ['id' => 'gemini-results']);
-
-// Results header bar.
-echo html_writer::start_div('d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2');
-
-echo html_writer::tag('h3', '', [
-    'id'    => 'gemini-results-title',
-    'class' => 'report-gemini-results-title mb-0',
-]);
-
-echo html_writer::tag('button',
-    get_string('clearreport', 'report_gemini_data'),
-    [
-        'id'    => 'gemini-clear-btn',
-        'type'  => 'button',
-        'class' => 'btn btn-outline-secondary btn-sm',
-    ]
-);
-
-echo html_writer::end_div(); // flex header
-
-// Table.
-echo html_writer::start_div('table-responsive');
-echo html_writer::tag('table', '', [
-    'id'    => 'gemini-table',
-    'class' => 'table table-striped table-hover table-bordered report-gemini-table align-middle',
-]);
-echo html_writer::end_div();
-
-// Meta info.
-echo html_writer::div('', 'text-muted small mt-2', ['id' => 'gemini-meta']);
-
-echo html_writer::end_div(); // #gemini-results
-
+</div><!-- /.rg-page -->
+<?php
 echo $OUTPUT->footer();
